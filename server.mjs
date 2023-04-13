@@ -12,6 +12,6 @@ const server = createServer((request, response) => {
   );
 });
 
-server.listen(4000, () => {
-  console.log(`Server running at http://localhost:4000`);
+server.listen(3000, () => {
+  console.log(`Server running at http://localhost:3000`);
 });
