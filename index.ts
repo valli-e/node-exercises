@@ -1,5 +1,9 @@
-import express, { Request, Response } from 'express';
-import joi from 'joi';
+
+const express = require('express');
+const morgan = require('morgan');
+const app = express();
+
+import { Request, Response } from 'express';
 
 type Planet = {
   id: number,
@@ -19,66 +23,67 @@ let planets: Planets = [
   },
 ];
 
-const router = express.Router();
+// Controller functions
 
-// planet validation
-const planetSchema = joi.object({
-  name: joi.string().required(),
-});
-
-// GET: return all planets in JSON with 200
-router.get('/api/planets', (req: Request, res: Response) => {
+function getAll(req: Request, res: Response): void {
   res.json(planets);
-});
+}
 
-// GET: return a planet in JSON by id with 200
-router.get('/api/planets/:id', (req: Request, res: Response) => {
-  const id = parseInt(req.params.id);
-  const planet = planets.find(p => p.id === id);
-  if (!planet) {
-    return res.status(404).json({ error: 'Planet not found' });
+function getOneById(req: Request, res: Response): void {
+  const planetId = parseInt(req.params.id);
+  const planet = planets.find(p => p.id === planetId);
+  if (planet) {
+    res.json(planet);
+  } else {
+    res.status(404).send(`Planet with id ${planetId} not found.`);
   }
-  res.json(planet);
-});
+}
 
-// POST: create a planet, return 201 code and a success JSON with key msg
-router.post('/api/planets', (req: Request, res: Response) => {
-  const { error, value } = planetSchema.validate(req.body);
-  if (error) {
-    return res.status(400).json({ error: error.details[0].message });
-  }
-  const newPlanet: Planet = {
-    id: planets.length + 1,
-    name: value.name,
-  };
+function create(req: Request, res: Response): void {
+  const newPlanet: Planet = { id: planets.length + 1, ...req.body };
   planets.push(newPlanet);
-  res.status(201).json({ msg: 'Planet created successfully' });
+  res.status(201).json(newPlanet);
+}
+
+function updateById(req: Request, res: Response): void {
+  const planetId = parseInt(req.params.id);
+  const planetIndex = planets.findIndex(p => p.id === planetId);
+  if (planetIndex !== -1) {
+    planets[planetIndex] = { id: planetId, ...req.body };
+    res.json(planets[planetIndex]);
+  } else {
+    res.status(404).send(`Planet with id ${planetId} not found.`);
+  }
+}
+
+function deleteById(req: Request, res: Response): void {
+  const planetId = parseInt(req.params.id);
+  const planetIndex = planets.findIndex(p => p.id === planetId);
+  if (planetIndex !== -1) {
+    planets = planets.filter(p => p.id !== planetId);
+    res.sendStatus(204);
+  } else {
+    res.status(404).send(`Planet with id ${planetId} not found.`);
+  }
+}
+
+// Routes
+
+app.get('/api/planets', getAll);
+app.get('/api/planets/:id', getOneById);
+app.post('/api/planets', create);
+app.put('/api/planets/:id', updateById);
+app.delete('/api/planets/:id', deleteById);
+
+// Error handling
+app.use((err: Error, req: Request, res: Response, next: Function) => {
+  console.error(err.stack);
+  res.status(500).send('Something broke!');
 });
 
-// PUT: update a planet by id, return 200 code and a success JSON with key msg
-router.put('/api/planets/:id', (req: Request, res: Response) => {
-  const id = parseInt(req.params.id);
-  const planet = planets.find(p => p.id === id);
-  if (!planet) {
-    return res.status(404).json({ error: 'Planet not found' });
-  }
-  const { error, value } = planetSchema.validate(req.body);
-  if (error) {
-    return res.status(400).json({ error: error.details[0].message });
-  }
-  planet.name = value.name;
-  res.json({ msg: 'Planet updated successfully' });
+// Start server
+const port = process.env.PORT || 3001;
+app.listen(port, () => {
+  console.log(`Server listening on port ${port}`);
 });
 
-// DELETE: delete a planet by id, return 200 code and a success JSON with key msg
-router.delete('/api/planets/:id', (req: Request, res: Response) => {
-  const id = parseInt(req.params.id);
-  const planetIndex = planets.findIndex(p => p.id === id);
-  if (planetIndex === -1) {
-    return res.status(404).json({ error: 'Planet not found' });
-  }
-  planets.splice(planetIndex, 1);
-  res.json({ msg: 'Planet deleted successfully' });
-});
-
-export default router;
