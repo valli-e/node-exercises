@@ -41,6 +41,12 @@ app.delete("/api/planets/:id", deleteById);
 
 app.post("/api/planets/:id/image", upload.single("image"), createImage)
 
+
+app.post("/api/users/signup", signUp);
+app.post("/api/users/login", logIn); 
+
+
+
 app.listen(port, () => {
   console.log(`example app running on port http://localhost:${port}`);
 });
