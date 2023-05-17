@@ -44,6 +44,10 @@ app.post("/api/planets/:id/image", upload.single("image"), createImage)
 
 app.post("/api/users/signup", signUp);
 app.post("/api/users/login", logIn); 
+app.get("/api/users/logout", authorize, logOut);
+
+
+
 
 
 
