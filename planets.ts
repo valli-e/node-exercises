@@ -20,15 +20,22 @@ const setupDb = async () => {
     DROP TABLE IF EXISTS planets;
     CREATE TABLE planets (
         id SERIAL NOT NULL PRIMARY KEY,
-        name TEXT NOT NULL
+        name TEXT NOT NULL,
+        image TEXT 
     );
-    INSERT INTO planets (name) VALUES ('Earth');
-    INSERT INTO planets (name) VALUES ('Mars');
-  `);
+     `);
+     
+      await db.none (`INSERT INTO planets (name) VALUES ('Earth')`);
+      await db.none (`INSERT INTO planets (name) VALUES ('Mars')`);
+ 
 };
 
 setupDb();
 
+const schema = Joi.object({
+  id: Joi.number().integer().required(),
+  name: Joi.string().required(),
+});
 
 const getAll = async (req: Request, res: Response) => {
   const planets = await db.many("SELECT * FROM planets;");
@@ -60,10 +67,25 @@ const deleteById = async (req: Request, res: Response) => {
   res.status(200).json({ msg: `Planet ${id} deleted` });
 };
 
+const createImage = async (req: Request, res: Response) => {
+  const { file } = req;
+  const { id } = req.params;
+  const fileName = file?.path;
+
+  if (!fileName) {
+    res.status(400).json({ msg: "Planet image failed" });
+    return;
+  }
+
+  db.none("UPDATE planets SET image=$2 WHERE id=$1", [Number(id), fileName]);
+  res.status(201).json({ msg: "Planet image was uploaded" });
+};
+
 export {
   getAll,
   getOneById,
   create,
   updatedById,
   deleteById,
+  createImage
 };
